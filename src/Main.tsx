@@ -1,3 +1,4 @@
+//@ts-nocheck
 import React, { useState } from 'react';
 
 import type {
@@ -5,7 +6,8 @@ import type {
   Protobuf,
   Types,
 } from '@meshtastic/meshtasticjs';
-
+//@ts-ignore
+import CSV from './lib/csv';
 import type { LanguageEnum, languageTemplate } from './App';
 import ChatMessage from './components/ChatMessage';
 import MessageBox from './components/MessageBox';
@@ -29,6 +31,46 @@ const Main = (props: MainProps) => {
     { message: Types.TextPacket; ack: boolean }[]
   >([]);
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
+
+  React.useEffect(() => {
+    const getFiles = async () => {
+      //use meshtastic JS to get files.
+      const res = await props.connection.getSPIFFS();
+      //if device has a messages file
+      if (res && res.data.files.find((file) => file.name.includes('messages'))) {
+        const messagesStream = await fetch(`${props.connection.url}/static/messages.csv`)
+        //@ts-ignore
+        const reader = messagesStream && messagesStream.body.getReader();
+        let result;
+        let decoder = new TextDecoder('utf8');
+        let data;
+        while (!result?.done) {
+          result = await reader.read();
+          let chunk = decoder.decode(result.value);
+          //weird 2nd blank chunk coming through... luckily this is just Proof of concept
+          if (chunk) {
+            data += chunk
+          }
+        }
+
+        const csvData = CSV.parse(data);
+        const messageArr = csvData.slice(1).map((message) => ({
+          message: {
+            data: message[message.length - 1],
+            packet: {
+              from: message[1],
+              to: message[2],
+              rxTime: message[0]
+            }
+          }
+        }))
+        setMessages(messageArr)
+        debugger;
+      }
+    }
+    getFiles();
+
+  }, [props.connection]);
 
   React.useEffect(() => {
     const textPacketEvent = props.connection.onTextPacketEvent.subscribe(

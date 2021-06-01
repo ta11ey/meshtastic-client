@@ -18,6 +18,7 @@ const Settings = (props: SettingsProps) => {
   React.useEffect(() => {
     const a = useObservableSuspense(
       new ObservableResource(
+      //@ts-ignore
         props.connection.onAdminPacketEvent.asObservable(),
       ),
     );
@@ -40,7 +41,8 @@ const Settings = (props: SettingsProps) => {
   const [
     preferences,
     setPreferences,
-  ] = React.useState<Protobuf.RadioConfig_UserPreferences>();
+  //@ts-ignore
+  ] = React.useState<Protobuf.RadioConfig_UserPreferences>({});
   const {
     register,
     setValue,
@@ -58,6 +60,7 @@ const Settings = (props: SettingsProps) => {
         <div className="my-auto">{props.translations.device_region_title}</div>
         <div className="flex shadow-md rounded-md ml-2">
           <select
+            //@ts-ignore
             value={preferences.region ?? Protobuf.RegionCode.Unset}
             // onChange={(e) => {
             //   preferences.region = parseInt(e.target.value);
